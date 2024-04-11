@@ -1,0 +1,54 @@
+{
+  "name": "@fairai/evm-sdk",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "main": "dist/esm.index.js",
+  "exports": {
+    ".": {
+      "node": "./dist/esm.node.index.js",
+      "import": "./dist/esm.index.js",
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs.index.js"
+    }
+  },
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "codegen": "graphql-codegen",
+    "build": "rimraf ./dist && tsc && cp -r ./dist/types/src/* ./dist/types && rimraf ./dist/types/src && ts-node ./build.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@irys/query": "^0.0.6",
+    "@irys/sdk": "^0.1.21",
+    "@urql/core": "^5.0.0",
+    "browser-or-node": "^3.0.0-pre.0",
+    "ethers": "^6.11.1",
+    "viem": "^2.9.13"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.2",
+    "@graphql-codegen/client-preset": "^4.2.5",
+    "@types/node": "^20.12.4",
+    "@typescript-eslint/eslint-plugin": "^7.5.0",
+    "@typescript-eslint/parser": "^7.5.0",
+    "esbuild": "0.20.2",
+    "esbuild-node-externals": "^1.13.0",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-love": "^44.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.1.1",
+    "graphql": "^16.8.1",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.3"
+  }
+}
