@@ -1,8 +1,8 @@
-import { USDC_ARB_SEPOLIA } from "./constants.js";
+import { USDC_ARB_SEPOLIA } from "./constants";
 import { isBrowser, isNode } from "browser-or-node";
 import fs from 'fs/promises';
 import { arbitrumSepolia } from 'viem/chains';
-import type { Log } from 'viem';
+import type { EIP1193Provider, Log } from 'viem';
 import { formatEther, formatUnits, hexToBigInt, hexToString, parseGwei, parseUnits, stringToHex } from 'viem/utils';
 import { getContract, PublicClient, WalletClient, createPublicClient, createWalletClient, custom, encodeFunctionData,  http, erc20Abi, webSocket} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -20,33 +20,37 @@ export const getProvider = () => {
   return { walletClient, publicClient };
 };
 
-export const setProvider = async (params?: { providerUrl: string, privateKeyFile: string } ) => {
+interface NodeProvider {
+  providerUrl?: string,
+  privateKeyFile?: string
+}
 
-  if (isBrowser && window?.ethereum) {
-    const [ account ] = await window.ethereum.request({ method: 'eth_requestAccounts' });
+export const setProvider = async (provider?: NodeProvider | EIP1193Provider) => {
+  if (isBrowser && (provider || window?.ethereum)) {
+    const [ account ] = await (provider as EIP1193Provider || window.ethereum).request({ method: 'eth_requestAccounts' });
 
     walletClient = createWalletClient({
       account,
       chain: CHAIN,
-      transport: custom(window.ethereum)
+      transport: custom(provider as EIP1193Provider || window.ethereum)
     });
     publicClient = createPublicClient({
       chain: CHAIN,
-      transport: custom(window.ethereum)
+      transport: custom(provider as EIP1193Provider || window.ethereum)
     });
-  } else if (isNode && !params?.privateKeyFile) {
+  } else if (isNode && !(provider as NodeProvider)?.privateKeyFile) {
     throw new Error('Private key file not provided');
   } else if (isNode) {
-    const privateKey = await fs.readFile(params?.privateKeyFile!, 'utf-8');
+    const privateKey = await fs.readFile((provider as NodeProvider)?.privateKeyFile!, 'utf-8');
 
     const account = privateKeyToAccount(`0x${privateKey}`);
     
-    const isWebSocketUrl = params?.providerUrl.startsWith('wss:');
-    const isHttpUrl = params?.providerUrl.startsWith('https:');
+    const isWebSocketUrl = (provider as NodeProvider)?.providerUrl?.startsWith('wss:');
+    const isHttpUrl = (provider as NodeProvider)?.providerUrl?.startsWith('https:');
 
-    if (!!params?.providerUrl && !isWebSocketUrl && !isHttpUrl) {
+    if (!!(provider as NodeProvider)?.providerUrl && !isWebSocketUrl && !isHttpUrl) {
       throw new Error('Invalid provider url. Must be a valid http or wss url');
-    } else if (!params?.providerUrl) {
+    } else if (!(provider as NodeProvider)?.providerUrl) {
       // if no provider passed, default to public arbitrum rpc
       walletClient = createWalletClient({
         chain: CHAIN,
@@ -58,7 +62,7 @@ export const setProvider = async (params?: { providerUrl: string, privateKeyFile
         transport: http('https://sepolia-rollup.arbitrum.io/rpc'),
       });
     } else {
-      const transport = isWebSocketUrl ? webSocket(params?.providerUrl) : http(params?.providerUrl);
+      const transport = isWebSocketUrl ? webSocket((provider as NodeProvider)?.providerUrl) : http((provider as NodeProvider)?.providerUrl);
       walletClient = createWalletClient({
         chain: CHAIN,
         account,
@@ -75,12 +79,12 @@ export const setProvider = async (params?: { providerUrl: string, privateKeyFile
 }
 
 
-export const getConnectedAddress = async () => {
+export const getConnectedAddress = () => {
   if (!walletClient) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
   }
 
-  return (await walletClient.getAddresses())[0];
+  return walletClient.account?.address;
 }
 
 export const decodeTxMemo = async (tx: `0x${string}`) => {
