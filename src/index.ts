@@ -1,3 +1,4 @@
 export * from './utils';
 export * from './evm';
-export { setIrys } from './irys';
+export * from './gql/graphql';
+export { setIrys, postOnArweave } from './irys';

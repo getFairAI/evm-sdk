@@ -1,24 +1,16 @@
 import { USDC_ARB_SEPOLIA } from "./constants";
 import { isBrowser, isNode } from "browser-or-node";
 import fs from 'fs/promises';
-import { arbitrumSepolia } from 'viem/chains';
+import { ChainEIP712, arbitrum } from 'viem/chains';
 import type { EIP1193Provider, Log } from 'viem';
-import { formatEther, formatUnits, hexToBigInt, hexToString, parseGwei, parseUnits, stringToHex } from 'viem/utils';
+import { formatEther, formatUnits, hexToBigInt, hexToString, parseUnits, stringToHex } from 'viem/utils';
 import { getContract, PublicClient, WalletClient, createPublicClient, createWalletClient, custom, encodeFunctionData,  http, erc20Abi, webSocket} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const CHAIN = arbitrumSepolia; /* process.env.ENV === 'develzopment' ? arbitrumSepolia : arbitrum; */
+const CHAIN = arbitrum;
 
 let walletClient: WalletClient;
 let publicClient: PublicClient;
-
-export const getProvider = () => {
-  if (!walletClient || !publicClient) {
-    throw new Error('Client Not Initialized. Please Call setProvider()');
-  }
-
-  return { walletClient, publicClient };
-};
 
 interface NodeProvider {
   providerUrl?: string,
@@ -55,11 +47,11 @@ export const setProvider = async (provider?: NodeProvider | EIP1193Provider) => 
       walletClient = createWalletClient({
         chain: CHAIN,
         account,
-        transport: http('https://sepolia-rollup.arbitrum.io/rpc'),
+        transport: http('https://arb1.arbitrum.io/rpc'),
       });
       publicClient = createPublicClient({
         chain: CHAIN,
-        transport: http('https://sepolia-rollup.arbitrum.io/rpc'),
+        transport: http('https://arb1.arbitrum.io/rpc'),
       });
     } else {
       const transport = isWebSocketUrl ? webSocket((provider as NodeProvider)?.providerUrl) : http((provider as NodeProvider)?.providerUrl);
@@ -78,13 +70,35 @@ export const setProvider = async (provider?: NodeProvider | EIP1193Provider) => 
   }
 }
 
-
-export const getConnectedAddress = () => {
-  if (!walletClient) {
+export const getCurrentChain = () => {
+  if (!walletClient || !publicClient) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
   }
 
-  return walletClient.account?.address;
+  return walletClient.chain;
+};
+
+export const switchChain = (chain: ChainEIP712) => {
+  if (!walletClient || !publicClient) {
+    throw new Error('Client Not Initialized. Please Call setProvider()');
+  }
+
+  try {
+    walletClient.switchChain({ id: chain.id });  
+  } catch (error) {
+    walletClient.addChain({ chain });
+    walletClient.switchChain({ id: chain.id});
+  }
+
+  return;
+};
+
+export const getConnectedAddress = () => {
+  if (!walletClient || !walletClient.account) {
+    throw new Error('Client Not Initialized. Please Call setProvider()');
+  }
+
+  return walletClient.account.address;
 }
 
 export const decodeTxMemo = async (tx: `0x${string}`) => {
@@ -113,13 +127,10 @@ export const getUsdcBalance = async () => {
 
   const userAddr = (await walletClient.getAddresses())[0];
   const ethBalance = await publicClient.getBalance({ address: userAddr });
-  console.log(`ETH Balance: ${ethBalance}`);
-
   const balance = await contract.read.balanceOf([ userAddr ]);
   const decimals = await contract.read.decimals();
   const symbol = await contract.read.symbol();
   if (typeof balance === 'bigint' && typeof decimals === 'number') {
-    console.log(`Balance: ${formatUnits(balance, decimals)} ${symbol}`);
     return Number(formatUnits(balance, decimals));
   }
 
@@ -196,7 +207,7 @@ export const sendUSDC = async (target: `0x${string}`, amount: number, arweaveTx:
 
 type callbackFn = (logs: Log[]) => void;
 
-export const subscribe = async (targetAddress: `0x${string}`, callback: callbackFn) => {
+export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) => {
   if (!publicClient) {
     throw new Error('Client Not Set. Please Call setProvider()');
   }
@@ -233,7 +244,6 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`) => {
     },
   });
 
-  console.log(logs);
   return logs;
 };
 

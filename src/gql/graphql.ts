@@ -17,7 +17,7 @@ export type Scalars = {
 };
 
 /** Representation of a value transfer between wallets, in both winson and ar. */
-export type Amount = {
+export type amount = {
   __typename?: 'Amount';
   /** Amount as an AR string e.g. \`"0.000000000001"\`. */
   ar: Scalars['String']['output'];
@@ -25,7 +25,7 @@ export type Amount = {
   winston: Scalars['String']['output'];
 };
 
-export type Block = {
+export type block = {
   __typename?: 'Block';
   /** The block height. */
   height: Scalars['Int']['output'];
@@ -41,14 +41,14 @@ export type Block = {
  * Paginated result set using the GraphQL cursor spec,
  * see: https://relay.dev/graphql/connections.htm.
  */
-export type BlockConnection = {
+export type blockConnection = {
   __typename?: 'BlockConnection';
-  edges: Array<BlockEdge>;
-  pageInfo: PageInfo;
+  edges: Array<blockEdge>;
+  pageInfo: pageInfo;
 };
 
 /** Paginated result set using the GraphQL cursor spec. */
-export type BlockEdge = {
+export type blockEdge = {
   __typename?: 'BlockEdge';
   /**
    * The cursor value for fetching the next page.
@@ -57,11 +57,11 @@ export type BlockEdge = {
    */
   cursor: Scalars['String']['output'];
   /** A block object. */
-  node: Block;
+  node: block;
 };
 
 /** Find blocks within a given range */
-export type BlockFilter = {
+export type blockFilter = {
   /** Maximum block height to filter to */
   max?: InputMaybe<Scalars['Int']['input']>;
   /** Minimum block height to filter from */
@@ -72,14 +72,14 @@ export type BlockFilter = {
  * The data bundle containing the current data item.
  * See: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md.
  */
-export type Bundle = {
+export type bundle = {
   __typename?: 'Bundle';
   /** ID of the containing data bundle. */
   id: Scalars['ID']['output'];
 };
 
 /** Basic metadata about the transaction data payload. */
-export type MetaData = {
+export type metaData = {
   __typename?: 'MetaData';
   /** Size of the associated data in bytes. */
   size: Scalars['String']['output'];
@@ -88,7 +88,7 @@ export type MetaData = {
 };
 
 /** Representation of a transaction owner. */
-export type Owner = {
+export type owner = {
   __typename?: 'Owner';
   /** The owner's wallet address. */
   address: Scalars['String']['output'];
@@ -97,7 +97,7 @@ export type Owner = {
 };
 
 /** Paginated page info using the GraphQL cursor spec. */
-export type PageInfo = {
+export type pageInfo = {
   __typename?: 'PageInfo';
   hasNextPage: Scalars['Boolean']['output'];
 };
@@ -106,7 +106,7 @@ export type PageInfo = {
  * The parent transaction for bundled transactions,
  * see: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md.
  */
-export type Parent = {
+export type parent = {
   __typename?: 'Parent';
   id: Scalars['ID']['output'];
 };
@@ -128,14 +128,14 @@ export type Parent = {
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export type Query = {
+export type query = {
   __typename?: 'Query';
-  block?: Maybe<Block>;
-  blocks: BlockConnection;
+  block?: Maybe<block>;
+  blocks: blockConnection;
   /** Get a transaction by its id */
-  transaction?: Maybe<Transaction>;
+  transaction?: Maybe<transaction>;
   /** Get a paginated set of matching transactions using filters. */
-  transactions: TransactionConnection;
+  transactions: transactionConnection;
 };
 
 
@@ -156,7 +156,7 @@ export type Query = {
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export type QueryBlockArgs = {
+export type queryblockArgs = {
   id?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -178,12 +178,12 @@ export type QueryBlockArgs = {
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export type QueryBlocksArgs = {
+export type queryblocksArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
-  height?: InputMaybe<BlockFilter>;
+  height?: InputMaybe<blockFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  sort?: InputMaybe<SortOrder>;
+  sort?: InputMaybe<sortOrder>;
 };
 
 
@@ -204,7 +204,7 @@ export type QueryBlocksArgs = {
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export type QueryTransactionArgs = {
+export type querytransactionArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -226,27 +226,27 @@ export type QueryTransactionArgs = {
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-export type QueryTransactionsArgs = {
+export type querytransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
-  block?: InputMaybe<BlockFilter>;
+  block?: InputMaybe<blockFilter>;
   bundledIn?: InputMaybe<Array<Scalars['ID']['input']>>;
   first?: InputMaybe<Scalars['Int']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   owners?: InputMaybe<Array<Scalars['String']['input']>>;
   recipients?: InputMaybe<Array<Scalars['String']['input']>>;
-  sort?: InputMaybe<SortOrder>;
-  tags?: InputMaybe<Array<TagFilter>>;
+  sort?: InputMaybe<sortOrder>;
+  tags?: InputMaybe<Array<tagFilter>>;
 };
 
 /** Optionally reverse the result sort order from `HEIGHT_DESC` (default) to `HEIGHT_ASC`. */
-export enum SortOrder {
+export enum sortOrder {
   /** Results are sorted by the transaction block height in ascending order, with the oldest transactions appearing first, and the most recent and pending/unconfirmed appearing last. */
-  HeightAsc = 'HEIGHT_ASC',
+  heightAsc = 'HEIGHT_ASC',
   /** Results are sorted by the transaction block height in descending order, with the most recent and unconfirmed/pending transactions appearing first. */
-  HeightDesc = 'HEIGHT_DESC'
+  heightDesc = 'HEIGHT_DESC'
 }
 
-export type Tag = {
+export type tag = {
   __typename?: 'Tag';
   /** UTF-8 tag name */
   name: Scalars['String']['output'];
@@ -255,11 +255,11 @@ export type Tag = {
 };
 
 /** Find transactions with the folowing tag name and value */
-export type TagFilter = {
+export type tagFilter = {
   /** The tag name */
   name: Scalars['String']['input'];
   /** The operator to apply to to the tag filter. Defaults to EQ (equal). */
-  op?: InputMaybe<TagOperator>;
+  op?: InputMaybe<tagOperator>;
   /**
    * An array of values to match against. If multiple values are passed then transactions with _any_ matching tag value from the set will be returned.
    *
@@ -277,50 +277,50 @@ export type TagFilter = {
 };
 
 /** The operator to apply to a tag value. */
-export enum TagOperator {
+export enum tagOperator {
   /** Equal */
-  Eq = 'EQ',
+  eq = 'EQ',
   /** Not equal */
-  Neq = 'NEQ'
+  neq = 'NEQ'
 }
 
-export type Transaction = {
+export type transaction = {
   __typename?: 'Transaction';
   anchor: Scalars['String']['output'];
   /** Transactions with a null block are recent and unconfirmed, if they aren't mined into a block within 60 minutes they will be removed from results. */
-  block?: Maybe<Block>;
+  block?: Maybe<block>;
   /**
    * For bundled data items this references the containing bundle ID.
    * See: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
    */
-  bundledIn?: Maybe<Bundle>;
-  data: MetaData;
-  fee: Amount;
+  bundledIn?: Maybe<bundle>;
+  data: metaData;
+  fee: amount;
   id: Scalars['ID']['output'];
-  owner: Owner;
+  owner: owner;
   /**
    * @deprecated Don't use, kept for backwards compatability only!
    * @deprecated Use `bundledIn`
    */
-  parent?: Maybe<Parent>;
-  quantity: Amount;
+  parent?: Maybe<parent>;
+  quantity: amount;
   recipient: Scalars['String']['output'];
   signature: Scalars['String']['output'];
-  tags: Array<Tag>;
+  tags: Array<tag>;
 };
 
 /**
  * Paginated result set using the GraphQL cursor spec,
  * see: https://relay.dev/graphql/connections.htm.
  */
-export type TransactionConnection = {
+export type transactionConnection = {
   __typename?: 'TransactionConnection';
-  edges: Array<TransactionEdge>;
-  pageInfo: PageInfo;
+  edges: Array<transactionEdge>;
+  pageInfo: pageInfo;
 };
 
 /** Paginated result set using the GraphQL cursor spec. */
-export type TransactionEdge = {
+export type transactionEdge = {
   __typename?: 'TransactionEdge';
   /**
    * The cursor value for fetching the next page.
@@ -329,36 +329,36 @@ export type TransactionEdge = {
    */
   cursor: Scalars['String']['output'];
   /** A transaction object. */
-  node: Transaction;
+  node: transaction;
 };
 
-export type Find_By_TagsQueryVariables = Exact<{
-  tags?: InputMaybe<Array<TagFilter> | TagFilter>;
+export type findByTagsQueryVariables = Exact<{
+  tags?: InputMaybe<Array<tagFilter> | tagFilter>;
   first: Scalars['Int']['input'];
   after?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type Find_By_TagsQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
+export type findByTagsQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
 
-export type Find_By_Tags_And_OwnersQueryVariables = Exact<{
-  tags?: InputMaybe<Array<TagFilter> | TagFilter>;
+export type findByTagsAndOwnersQueryVariables = Exact<{
+  tags?: InputMaybe<Array<tagFilter> | tagFilter>;
   owners?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
   first: Scalars['Int']['input'];
   after?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type Find_By_Tags_And_OwnersQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
+export type findByTagsAndOwnersQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
 
-export type Find_By_IdQueryVariables = Exact<{
+export type findByIdQueryVariables = Exact<{
   ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
 }>;
 
 
-export type Find_By_IdQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
+export type findByIdQuery = { __typename?: 'Query', transactions: { __typename?: 'TransactionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean }, edges: Array<{ __typename?: 'TransactionEdge', cursor: string, node: { __typename?: 'Transaction', id: string, tags: Array<{ __typename?: 'Tag', name: string, value: string }>, owner: { __typename?: 'Owner', address: string, key: string } } }> } };
 
 
-export const Find_By_TagsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FIND_BY_TAGS"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TagFilter"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<Find_By_TagsQuery, Find_By_TagsQueryVariables>;
-export const Find_By_Tags_And_OwnersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FIND_BY_TAGS_AND_OWNERS"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TagFilter"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owners"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"owners"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owners"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<Find_By_Tags_And_OwnersQuery, Find_By_Tags_And_OwnersQueryVariables>;
-export const Find_By_IdDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FIND_BY_ID"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ids"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ids"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ids"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<Find_By_IdQuery, Find_By_IdQueryVariables>;
+export const findByTagsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"findByTags"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TagFilter"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<findByTagsQuery, findByTagsQueryVariables>;
+export const findByTagsAndOwnersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"findByTagsAndOwners"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tags"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TagFilter"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owners"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"first"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"after"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tags"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tags"}}},{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"first"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"after"}}},{"kind":"Argument","name":{"kind":"Name","value":"owners"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owners"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<findByTagsAndOwnersQuery, findByTagsAndOwnersQueryVariables>;
+export const findByIdDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"findById"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ids"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"transactions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ids"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ids"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"EnumValue","value":"HEIGHT_DESC"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pageInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasNextPage"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"owner"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"key"}}]}}]}}]}}]}}]}}]} as unknown as DocumentNode<findByIdQuery, findByIdQueryVariables>;

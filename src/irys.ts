@@ -1,26 +1,32 @@
 import fs from 'fs/promises';
 import Irys, { WebIrys } from "@irys/sdk";
 import { isBrowser, isNode } from "browser-or-node";
-import { createWalletClient, custom } from 'viem';
-import { arbitrumSepolia } from 'viem/chains';
+import { EIP1193Provider, createWalletClient, custom } from 'viem';
+import { arbitrum } from 'viem/chains';
 
-const network = 'devnet';
+const network = 'mainnet';
 const token = 'arbitrum';
-const rpcUrl = 'https://sepolia-rollup.arbitrum.io/rpc';
+const rpcUrl = 'https://arb1.arbitrum.io/rpc';
 
 let irysInstance: Irys | WebIrys;
 
-const setWebIrys = async () => {
-  if (!window?.ethereum) {
+interface NodeProvider {
+  providerUrl?: string,
+  privateKeyFile?: string
+}
+
+const setWebIrys = async (provider?: EIP1193Provider) => {
+  const availableProvider = provider ?? window?.ethereum;
+  if (!availableProvider) {
     throw new Error('Browser Provider not available.');
   }
 
-  const [ account ] = await window.ethereum.request({ method: 'eth_requestAccounts' });
+  const [ account ] = await availableProvider.request({ method: 'eth_requestAccounts' });
 
   const walletClient = createWalletClient({
     account,
-    chain: arbitrumSepolia,
-    transport: custom(window.ethereum)
+    chain: arbitrum,
+    transport: custom(availableProvider)
   });
 	// Create a wallet object
 	const wallet = { name: "viemv2", rpcUrl, provider: walletClient };
@@ -39,30 +45,29 @@ const setNodeIrys = async (privateKeyFile: string, rpcUrl?: string) => {
     network,
     key: privateKey,
     config: {
-      providerUrl: rpcUrl || 'https://sepolia-rollup.arbitrum.io/rpc'
+      providerUrl: rpcUrl ?? 'https://arb1.arbitrum.io/rpc'
     }
   });
 }
 
-export const setIrys = async (privateKeyFile?: string, rpcUrl?: string) => {
+export const setIrys = async (provider: NodeProvider | EIP1193Provider) => {
   if (isBrowser) {
-    irysInstance = await setWebIrys();
-  } else if (isNode && privateKeyFile) {
-    irysInstance = await setNodeIrys(privateKeyFile, rpcUrl);
-  } else if (isNode && !privateKeyFile) {
+    irysInstance = await setWebIrys(provider as EIP1193Provider);
+  } else if (isNode && (provider as NodeProvider).privateKeyFile) {
+    irysInstance = await setNodeIrys((provider as NodeProvider).privateKeyFile!, rpcUrl);
+  } else if (isNode && !(provider as NodeProvider).privateKeyFile) {
     throw new Error('Private key file not provided');
   } else {
     throw new Error('Environment not recognized');
   }
 }
 
-export const postOnArweave = async (data: string, tags: { name: string, value: string }[]) => {
+export const postOnArweave = async (data: string | File, tags: { name: string, value: string }[]) => {
   try {
-    console.log(isBrowser);
     if (!irysInstance) {
       throw new Error('Irys instance not Set. Please call SetIrys()');
     }
-    const size = (new TextEncoder().encode(data)).length;
+    const size = data instanceof File ? data.size : (new TextEncoder().encode(data)).length;
 
     // check size is below 100kb
     const kB = 1024;
@@ -70,16 +75,20 @@ export const postOnArweave = async (data: string, tags: { name: string, value: s
       throw new Error('Data size too large. Must be less than 100kb');
     }
   
-    /* const price = await irysInstance.getPrice(size);
-    await irysInstance.fund(price); */
+    if (isBrowser && data instanceof File) {
+      const { id } = await (irysInstance as WebIrys).uploadFile(data, {
+        tags
+      });
   
-    const { id } = await irysInstance.upload(data, {
-      tags
-    });
-    console.log(`${data} --> Uploaded to https://gateway.irys.xyz/${id}`);
-
-    return id;
+      return id;
+    } else if (typeof data === 'string') {
+      const { id } = await irysInstance.upload(data, {
+        tags
+      });
+  
+      return id;
+    } 
   } catch (e) {
-    console.log("Error uploading", e);
+    return undefined;
   }
 }

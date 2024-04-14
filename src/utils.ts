@@ -6,7 +6,7 @@ import { graphql } from "./gql/gql";
 import { Client, fetchExchange } from '@urql/core';
 import { formatUnits, hexToBigInt } from "viem";
 import { MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE } from "./constants.js";
-import { Find_By_IdQuery } from "./gql/graphql.js";
+import { findByIdQuery } from "./gql/graphql.js";
 
 const client = new Client({
   url: 'https://arweave.net/graphql',
@@ -16,7 +16,7 @@ const client = new Client({
 const queryClient = new Query({ network: 'devnet' });
 
 const query = graphql(`
-  query FIND_BY_TAGS($tags: [TagFilter!], $first: Int!, $after: String) {
+  query findByTags($tags: [TagFilter!], $first: Int!, $after: String) {
     transactions(
       tags: $tags
       first: $first
@@ -45,7 +45,7 @@ const query = graphql(`
 `);
 
 const queryByTagsAndOwners = graphql(`
-  query FIND_BY_TAGS_AND_OWNERS($tags: [TagFilter!], $owners: [String!], $first: Int!, $after: String) {
+  query findByTagsAndOwners($tags: [TagFilter!], $owners: [String!], $first: Int!, $after: String) {
     transactions(
       tags: $tags
       first: $first
@@ -75,7 +75,7 @@ const queryByTagsAndOwners = graphql(`
 `);
 
 const queryById = graphql(`
-  query FIND_BY_ID($ids: [ID!]) {
+  query findById($ids: [ID!]) {
     transactions(
       ids: $ids
       sort: HEIGHT_DESC
@@ -115,7 +115,37 @@ const validateRegistration = async (operatorEvmAddress: `0x${string}`, registrat
   return false;
 };
 
-export const findAvailableOperator = async (script: Find_By_IdQuery) => {
+export const countStamps = async (txids: string[]) => {
+  const { data: stampsData } = await client.query(query, {
+    tags: [
+      { name: 'Protocol-Name', values: [ 'Stamp' ]},
+      { name: 'Data-Source', values: txids },
+    ],
+    first: 100,
+  });
+
+  if (!stampsData?.transactions.edges || stampsData.transactions.edges.length === 0) {
+    return undefined;
+  }
+
+  // group by source (aka stamped tx)
+  const stampsCount = stampsData.transactions.edges.reduce((acc, tx) => {
+    const source = tx.node.tags.find(tag => tag.name === 'Data-Source')?.value;
+    
+    if (!source) {
+      return acc;
+    } else if (acc[source]) {
+      acc[source]++;
+    } else {
+      acc[source] = 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  return stampsCount;
+};
+
+export const findAvailableOperators = async (script: findByIdQuery) => {
   const { data: operatorData } = await client.query(query, {
     tags: [
       {
@@ -191,7 +221,7 @@ export const findAvailableOperator = async (script: Find_By_IdQuery) => {
   );
 
   if (!availableOperators || availableOperators.length === 0) {
-    return undefined;
+    return [];
   }
 
   // validate previous requests
@@ -207,37 +237,16 @@ export const findAvailableOperator = async (script: Find_By_IdQuery) => {
 
     // validate operator paid registration fee && distributed fees for requests received
     if (operatorEvmWallet && await validateRegistration(operatorEvmWallet, operator.node.id) && await validateDistributionFees(operatorEvmWallet, operator.node.owner.address, operatorFee, curatorEvmWallet)) {
-      filtered.push({ tx: operator, evmWallet: operatorEvmWallet, operatorFee });
+      filtered.push({ tx: operator, evmWallet: operatorEvmWallet, arweaveWallet: operator.node.owner.address, operatorFee });
     }
   }
 
   // order by stamps
-  const { data: stampsData } = await client.query(query, {
-    tags: [
-      { name: 'Protocol-Name', values: [ 'Stamp' ]},
-      { name: 'Data-Source', values: filtered?.map(op => op.tx.node.id) ?? [] },
-    ],
-    first: 100,
-  });
-  console.log(stampsData?.transactions.edges);
+  const stampsCount = await countStamps(filtered.map(op => op.tx.node.id) ?? []);
 
-  if (!stampsData?.transactions.edges || stampsData.transactions.edges.length === 0) {
-    return filtered[0]; // choose latest
+  if (!stampsCount) {
+    return filtered;
   }
-
-  // group by source (aka stamped tx)
-  const stampsCount = stampsData.transactions.edges.reduce((acc, tx) => {
-    const source = tx.node.tags.find(tag => tag.name === 'Data-Source')?.value;
-    
-    if (!source) {
-      return acc;
-    } else if (acc[source]) {
-      acc[source]++;
-    } else {
-      acc[source] = 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
 
   // return filtered operators sorted by stamps
   filtered.sort((a, b) => {
@@ -247,7 +256,7 @@ export const findAvailableOperator = async (script: Find_By_IdQuery) => {
     return stampsCount[aTxid] - stampsCount[bTxid];
   });
 
-  return filtered[0];
+  return filtered;
 }
 
 export const getLinkedEvmWallet = async (arweaveWallet: string) => {
@@ -277,7 +286,38 @@ export const getLinkedEvmWallet = async (arweaveWallet: string) => {
   }
 };
 
-export const prompt = async (text: string, scriptTx: string, cid?: number) => {
+export const startConversation = async (scriptTx: string, newCid: string) => {
+  const tags = [
+    {
+      name: 'Protocol-Name',
+      value: 'FairAI',
+    },
+    {
+      name: 'Protocol-Version',
+      value: '2.0-test',
+    },
+    {
+      name: 'Operation-Name',
+      value: 'Conversation Start',
+    },
+    {
+      name: 'Script-Transaction',
+      value: scriptTx,
+    },
+    {
+      name: 'Unix-Time',
+      value: (Date.now() / 1000).toString(),
+    },
+    {
+      name: 'Conversation-Identifier',
+      value: newCid,
+    },
+  ];
+
+  await postOnArweave('Conversation Start', tags);
+};
+
+export const prompt = async (data: string | File, scriptTx: string, operator?: { evmWallet: `0x${string}`, operatorFee: number }, cid?: number) => {
   
   const wallet = await getConnectedAddress();
 
@@ -309,10 +349,16 @@ export const prompt = async (text: string, scriptTx: string, cid?: number) => {
     throw new Error('Script not found');
   }
 
-  const result = await findAvailableOperator(scriptData);
+  let result;
+  if (!operator) {
 
-  if (!result) {
-    throw new Error('No operators available');
+    [ result ] = await findAvailableOperators(scriptData); // get top of the list
+
+    if (!result) {
+      throw new Error('No operators available');
+    }
+  } else {
+    result = operator;
   }
 
   const { evmWallet: operatorEvmWallet, operatorFee } = result;
@@ -326,7 +372,7 @@ export const prompt = async (text: string, scriptTx: string, cid?: number) => {
 
   const tempDate = Date.now() / 1000;
   tags.push({ name: 'Unix-Time', value: tempDate.toString() });
-  tags.push({ name: 'Content-Type', value: 'text/plain' });
+  tags.push({ name: 'Content-Type', value: data instanceof File ? data.type : 'text/plain' });
   if (isNode) {
     tags.push({ name: 'Transaction-Origin', value: 'FairAI Node' });
   } else {
@@ -337,12 +383,14 @@ export const prompt = async (text: string, scriptTx: string, cid?: number) => {
   tags.push({ name: 'Derivation', value: 'Allowed-With-License-Passthrough' });
   tags.push({ name: 'Commercial-Use', value: 'Allowed' });
 
-  const requestId = await postOnArweave(text, tags);
+  const requestId = await postOnArweave(data, tags);
 
   if (!requestId) {
     throw new Error('Could not upload to arweave');
   }
-  await sendUSDC(operatorEvmWallet, operatorFee, requestId);
+  const evmId = await sendUSDC(operatorEvmWallet, operatorFee, requestId);
+
+  return { arweaveTxId: requestId, evmTxId: evmId };
 }
 
 export const validateDistributionFees = async (targetAddress: `0x${string}`, targetArweaveAddr: string, fee: number, curatorEvmAddr?: `0x${string}`) => {
@@ -355,7 +403,6 @@ export const validateDistributionFees = async (targetAddress: `0x${string}`, tar
   }
 
   const receivedFee = hexToBigInt(latestLog.data);
-  console.log(formatUnits(receivedFee, 6));
   const arweaveTx = await decodeTxMemo(latestLog.transactionHash);
 
   if (!arweaveTx) {
