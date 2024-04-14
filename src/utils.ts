@@ -154,7 +154,7 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
       },
       {
         name: 'Protocol-Version',
-        values: ['2.0-test'],
+        values: ['2.0'],
       },
       {
         name: 'Operation-Name',
@@ -178,7 +178,7 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
       },
       {
         name: 'Protocol-Version',
-        values: ['2.0-test'],
+        values: ['2.0'],
       },
       {
         name: 'Operation-Name',
@@ -200,7 +200,7 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
       },
       {
         name: 'Protocol-Version',
-        values: ['2.0-test'],
+        values: ['2.0'],
       },
       {
         name: 'Operation-Name',
@@ -268,7 +268,7 @@ export const getLinkedEvmWallet = async (arweaveWallet: string) => {
       },
       {
         name: 'Protocol-Version',
-        values: ['2.0-test'],
+        values: ['2.0'],
       },
       { name: 'Operation-Name', values: ['EVM Wallet Link'] },
     ],
@@ -294,7 +294,7 @@ export const startConversation = async (scriptTx: string, newCid: string) => {
     },
     {
       name: 'Protocol-Version',
-      value: '2.0-test',
+      value: '2.0',
     },
     {
       name: 'Operation-Name',
@@ -329,7 +329,7 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
       },
       {
         name: 'Protocol-Version',
-        values: ['2.0-test'],
+        values: ['2.0'],
       },
       {
         name: 'Operation-Name',
@@ -365,7 +365,7 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
 
   const tags: { name: string; value: string }[] = [];
   tags.push({ name: 'Protocol-Name', value: 'FairAI' });
-  tags.push({ name: 'Protocol-Version', value: '2.0-test' });
+  tags.push({ name: 'Protocol-Version', value: '2.0' });
   tags.push({ name: 'Script-Transaction', value: scriptTx });
   tags.push({ name: 'Operation-Name', value: 'Inference Request' });
   tags.push({ name: 'Conversation-Identifier', value: `${cid}` });
@@ -422,7 +422,7 @@ export const validateDistributionFees = async (targetAddress: `0x${string}`, tar
   const { data: responseData } = await client.query(queryByTagsAndOwners, {
     tags: [
       { name: 'Protocol-Name', values: [ 'FairAI' ] },
-      { name: 'Protocol-Version', values: [ '2.0-test' ] },
+      { name: 'Protocol-Version', values: [ '2.0' ] },
       {
         name: 'Request-Transaction',
         values: [ arweaveTx ],

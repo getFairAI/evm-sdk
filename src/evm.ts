@@ -1,4 +1,4 @@
-import { USDC_ARB_SEPOLIA } from "./constants";
+import { NATIVE_USDC_ARB } from "./constants";
 import { isBrowser, isNode } from "browser-or-node";
 import fs from 'fs/promises';
 import { ChainEIP712, arbitrum } from 'viem/chains';
@@ -120,7 +120,7 @@ export const getUsdcBalance = async () => {
   }
 
   const contract = getContract({
-    address: USDC_ARB_SEPOLIA,
+    address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     client: { wallet: walletClient, public: publicClient }
   });
@@ -155,7 +155,7 @@ export const sendUSDC = async (target: `0x${string}`, amount: number, arweaveTx:
 
   // Convert the amount to send to decimals (6 decimals for USDC)
   const contract = getContract({
-    address: USDC_ARB_SEPOLIA,
+    address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     client: {
       wallet: walletClient,
@@ -187,7 +187,7 @@ export const sendUSDC = async (target: `0x${string}`, amount: number, arweaveTx:
 
   const request = await walletClient.prepareTransactionRequest({
     account: walletClient.account!,
-    to: USDC_ARB_SEPOLIA,
+    to: NATIVE_USDC_ARB,
     chain: CHAIN,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -214,7 +214,7 @@ export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) =>
 
   return publicClient.watchContractEvent({
     abi: erc20Abi,
-    address: USDC_ARB_SEPOLIA,
+    address: NATIVE_USDC_ARB,
     eventName: 'Transfer',
     args: {  
       to: targetAddress
@@ -234,7 +234,7 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`) => {
   // const startBlock = blockNumber + ()
   // geet all usdc transfers received by target address
   const logs = await publicClient.getContractEvents({
-    address: USDC_ARB_SEPOLIA,
+    address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
     fromBlock: blockNumber - 1000000n,
@@ -258,7 +258,7 @@ export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?:
   // const startBlock = blockNumber + ()
   // geet all usdc transfers received by target address
   const logs = await publicClient.getContractEvents({
-    address: USDC_ARB_SEPOLIA,
+    address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
     fromBlock: blockNumber - 1000000n,
