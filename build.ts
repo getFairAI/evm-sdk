@@ -38,7 +38,6 @@ try {
     format: 'esm',
     platform: 'neutral',
     outfile: 'dist/esm.index.js',
-    sourcemap: true,
     plugins: [ 
       ...sharedConfig.plugins,
       polyfillNode({
