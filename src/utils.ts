@@ -4,7 +4,7 @@ import { postOnArweave } from "./irys.js";
 import { decodeTxMemo, getConnectedAddress, getUsdcReceivedLogs, getUsdcSentLogs, sendUSDC } from "./evm";
 import { graphql } from "./gql/gql";
 import { Client, fetchExchange } from '@urql/core';
-import { formatUnits, hexToBigInt } from "viem";
+import { hexToBigInt } from "viem";
 import { MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE } from "./constants.js";
 import { findByIdQuery } from "./gql/graphql.js";
 
@@ -13,7 +13,7 @@ const client = new Client({
   exchanges: [fetchExchange],
 });
 
-const queryClient = new Query({ network: 'devnet' });
+const queryClient = new Query();
 
 const query = graphql(`
   query findByTags($tags: [TagFilter!], $first: Int!, $after: String) {
