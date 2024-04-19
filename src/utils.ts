@@ -7,6 +7,7 @@ import { Client, fetchExchange } from '@urql/core';
 import { hexToBigInt } from "viem";
 import { MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE } from "./constants.js";
 import { findByIdQuery } from "./gql/graphql.js";
+import { config } from "process";
 
 const client = new Client({
   url: 'https://arweave.net/graphql',
@@ -347,7 +348,7 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
     tags.push({ name: 'User-Custom-Tags', value: JSON.stringify(configuration.customTags) });
   }
 
-  if (configuration.nImages && configuration.nImages > 0) {
+  if (configuration.nImages && configuration.nImages > 0 && configuration.nImages < 10) {
     tags.push({ name: 'N-Images', value: configuration.nImages.toString() });
   }
 
@@ -441,7 +442,14 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
   if (!requestId) {
     throw new Error('Could not upload to arweave');
   }
-  const evmId = await sendUSDC(operatorEvmWallet, operatorFee, requestId);
+
+  let finalFee = operatorFee;
+  
+  if (config?.nImages && (config.nImages > 1 || config.nImages < 10)) {
+    finalFee *= config.nImages;
+  }
+
+  const evmId = await sendUSDC(operatorEvmWallet, finalFee, requestId);
 
   return { arweaveTxId: requestId, evmTxId: evmId };
 }
