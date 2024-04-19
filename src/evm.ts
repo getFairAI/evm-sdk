@@ -70,12 +70,12 @@ export const setProvider = async (provider?: NodeProvider | EIP1193Provider) => 
   }
 }
 
-export const getCurrentChain = () => {
+export const getCurrentChainId = async () => {
   if (!walletClient || !publicClient) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
   }
 
-  return walletClient.chain;
+  return walletClient.getChainId();
 };
 
 export const switchChain = (chain: ChainEIP712) => {
@@ -126,10 +126,8 @@ export const getUsdcBalance = async () => {
   });
 
   const userAddr = (await walletClient.getAddresses())[0];
-  const ethBalance = await publicClient.getBalance({ address: userAddr });
   const balance = await contract.read.balanceOf([ userAddr ]);
   const decimals = await contract.read.decimals();
-  const symbol = await contract.read.symbol();
   if (typeof balance === 'bigint' && typeof decimals === 'number') {
     return Number(formatUnits(balance, decimals));
   }
@@ -223,12 +221,13 @@ export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) =>
   });
 }
 
-export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`) => {
+export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestamp: number) => {
   if (!publicClient) {
     throw new Error('Client Not Set. Please Call setProvider()');
   }
 
-  const blockNumber = await publicClient.getBlockNumber() 
+  const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
+  const { height: nearestBlockNumber } = await result.json();
 
   // calculate block at which to start looking for logs (1 month)
   // const startBlock = blockNumber + ()
@@ -237,7 +236,7 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`) => {
     address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
-    fromBlock: blockNumber - 1000000n,
+    fromBlock: BigInt(nearestBlockNumber - 10),
     toBlock: 'latest',
     args: {
       to: targetAddress
@@ -247,12 +246,13 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`) => {
   return logs;
 };
 
-export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?: `0x${string}`, amount?: number) => {
+export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?: `0x${string}`, amount?: number, timestamp?: number) => {
   if (!publicClient) {
     throw new Error('Client Not Set. Please Call setProvider()');
   }
 
-  const blockNumber = await publicClient.getBlockNumber() 
+  const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
+  const { height: nearestBlockNumber } = await result.json();
 
   // calculate block at which to start looking for logs (1 month)
   // const startBlock = blockNumber + ()
@@ -261,7 +261,7 @@ export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?:
     address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
-    fromBlock: blockNumber - 1000000n,
+    fromBlock: BigInt(nearestBlockNumber - 10),
     toBlock: 'latest',
     args: {
       from: senderAddr,
