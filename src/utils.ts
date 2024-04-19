@@ -318,7 +318,55 @@ export const startConversation = async (scriptTx: string, newCid: string) => {
   await postOnArweave('Conversation Start', tags);
 };
 
-export const prompt = async (data: string | File, scriptTx: string, operator?: { evmWallet: `0x${string}`, operatorFee: number }, cid?: number) => {
+interface Configuration {
+  assetNames?: string[];
+  customTags?: { name: string; value: string }[];
+  negativePrompt?: string;
+  nImages?: number;
+  title?: string;
+  description?: string;
+  width?: number;
+  height?: number;
+  requestCaller?: string;
+}
+
+const addConfigTags = (tags: { name: string, value: string }[], configuration: Configuration, userAddr: string) => {
+  if (configuration.assetNames) {
+    tags.push({ name: 'Asset-Names', value: JSON.stringify(configuration.assetNames) });
+  }
+
+  if (configuration.negativePrompt) {
+    tags.push({ name: 'Negative-Prompt', value: configuration.negativePrompt });
+  }
+
+  if (configuration.description) {
+    tags.push({ name: 'Description', value: configuration.description });
+  }
+
+  if (configuration.customTags && configuration.customTags?.length > 0) {
+    tags.push({ name: 'User-Custom-Tags', value: JSON.stringify(configuration.customTags) });
+  }
+
+  if (configuration.nImages && configuration.nImages > 0) {
+    tags.push({ name: 'N-Images', value: configuration.nImages.toString() });
+  }
+
+  if (configuration.width && configuration.width > 0) {
+    tags.push({ name: 'Images-Width', value: configuration.width.toString() });
+  }
+
+  if (configuration.height && configuration.height > 0) {
+    tags.push({ name: 'Images-Height', value: configuration.height.toString() });
+  }
+
+  if (configuration.requestCaller) {
+    tags.push({ name: 'Request-Caller', value: configuration.requestCaller });
+  } else {
+    tags.push({ name: 'Request-Caller', value: userAddr });
+  }
+};
+
+export const prompt = async (data: string | File, scriptTx: string, operator?: { evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration) => {
   
   const wallet = await getConnectedAddress();
 
@@ -383,6 +431,10 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
   tags.push({ name: 'License', value: '' });
   tags.push({ name: 'Derivation', value: 'Allowed-With-License-Passthrough' });
   tags.push({ name: 'Commercial-Use', value: 'Allowed' });
+
+  if (config) {
+    addConfigTags(tags, config, wallet);
+  }
 
   const requestId = await postOnArweave(data, tags);
 
