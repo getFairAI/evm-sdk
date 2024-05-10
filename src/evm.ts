@@ -221,7 +221,7 @@ export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) =>
   });
 }
 
-export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestamp: number) => {
+export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestamp: number, limit?: number) => {
   if (!publicClient) {
     throw new Error('Client Not Set. Please Call setProvider()');
   }
@@ -229,31 +229,32 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestam
   const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
   const { height: nearestBlockNumber } = await result.json();
 
-  // calculate block at which to start looking for logs (1 month)
+  const toBlock: bigint | 'latest' = limit ? BigInt(nearestBlockNumber + limit) : 'latest';
+  // calculate block at which to start looking for logs (1 month)s
   // const startBlock = blockNumber + ()
   // geet all usdc transfers received by target address
   const logs = await publicClient.getContractEvents({
     address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
-    fromBlock: BigInt(nearestBlockNumber - 10),
-    toBlock: 'latest',
     args: {
       to: targetAddress
     },
+    fromBlock: BigInt(nearestBlockNumber - 10),
+    toBlock,
   });
 
   return logs;
 };
 
-export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?: `0x${string}`, amount?: number, timestamp?: number) => {
+export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?: `0x${string}`, amount?: number, timestamp?: number, limit?: number) => {
   if (!publicClient) {
     throw new Error('Client Not Set. Please Call setProvider()');
   }
 
   const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
   const { height: nearestBlockNumber } = await result.json();
-
+  const toBlock: bigint | 'latest' = limit ? BigInt(nearestBlockNumber + limit) : 'latest';
   // calculate block at which to start looking for logs (1 month)
   // const startBlock = blockNumber + ()
   // geet all usdc transfers received by target address
@@ -261,13 +262,13 @@ export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?:
     address: NATIVE_USDC_ARB,
     abi: erc20Abi,
     eventName: 'Transfer',
-    fromBlock: BigInt(nearestBlockNumber - 10),
-    toBlock: 'latest',
     args: {
       from: senderAddr,
       to: targetAddress,
     },
     strict: true,
+    fromBlock: BigInt(nearestBlockNumber - 10),
+    toBlock,
   });
 
   if (amount) {

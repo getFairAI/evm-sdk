@@ -7,7 +7,6 @@ import { Client, fetchExchange } from '@urql/core';
 import { hexToBigInt } from "viem";
 import { MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE } from "./constants.js";
 import { findByIdQuery } from "./gql/graphql.js";
-import { config } from "process";
 
 const client = new Client({
   url: 'https://arweave.net/graphql',
@@ -103,7 +102,8 @@ const queryById = graphql(`
 `);
 
 const validateRegistration = async (operatorEvmAddress: `0x${string}`, registrationTx: string, timestamp: number) => {
-  const logs = await getUsdcSentLogs(operatorEvmAddress, MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE, timestamp);
+  const blockRange = 2500;
+  const logs = await getUsdcSentLogs(operatorEvmAddress, MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE, timestamp, blockRange);
 
   for (const log of logs) {
     const arweaveTx = await decodeTxMemo(log.transactionHash!);
@@ -233,13 +233,13 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
     const operatorFee = Number(operator.node.tags.find(tag => tag.name === 'Operator-Fee')?.value);
       
     // operator evm wallet
-    const operatorEvmWallet = await getLinkedEvmWallet(operator.node.owner.address);
-    const curatorEvmWallet = await getLinkedEvmWallet(script.transactions.edges[0].node.owner.address);
+    const operatorEvmResult = await getLinkedEvmWallet(operator.node.owner.address);
+    const curatorEvmResult = await getLinkedEvmWallet(script.transactions.edges[0].node.owner.address);
 
     const timestamp = Number(operator.node.tags.find(tag => tag.name === 'Unix-Time')?.value);
     // validate operator paid registration fee && distributed fees for requests received
-    if (operatorEvmWallet && await validateRegistration(operatorEvmWallet, operator.node.id, timestamp) && await validateDistributionFees(operatorEvmWallet, operator.node.owner.address, operatorFee, timestamp, curatorEvmWallet)) {
-      filtered.push({ tx: operator, evmWallet: operatorEvmWallet, arweaveWallet: operator.node.owner.address, operatorFee });
+    if (operatorEvmResult?.evmWallet && await validateRegistration(operatorEvmResult.evmWallet, operator.node.id, timestamp) && await validateDistributionFees(operatorEvmResult?.evmWallet, operator.node.owner.address, operatorFee, timestamp, curatorEvmResult?.evmWallet)) {
+      filtered.push({ tx: operator, evmWallet: operatorEvmResult?.evmWallet, evmPublicKey: operatorEvmResult?.publicKey, arweaveWallet: operator.node.owner.address, operatorFee });
     }
   }
 
@@ -283,8 +283,8 @@ export const getLinkedEvmWallet = async (arweaveWallet: string) => {
   } else {
     const response = await fetch('https://arweave.net/' + evmData.transactions.edges[0].node.id);
     const evmWallet = await response.text() as `0x${string}`;
-
-    return evmWallet.substring(0, 2) === '0x' ? evmWallet : undefined;
+    const publicKey = evmData.transactions.edges[0].node.tags.find(tag => tag.name === 'EVM-Public-Key')?.value;
+    return evmWallet.substring(0, 2) === '0x' && publicKey ? { evmWallet, publicKey } : undefined;
   }
 };
 
@@ -329,6 +329,9 @@ interface Configuration {
   width?: number;
   height?: number;
   requestCaller?: string;
+  privateMode?: boolean;
+  userPubKey?: string;
+  encDataForOperator?: string;
 }
 
 const addConfigTags = (tags: { name: string, value: string }[], configuration: Configuration, userAddr: string) => {
@@ -364,6 +367,18 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
     tags.push({ name: 'Request-Caller', value: configuration.requestCaller });
   } else {
     tags.push({ name: 'Request-Caller', value: userAddr });
+  }
+
+  if (configuration.privateMode) {
+    tags.push({ name: 'Private-Mode', value: 'true' });
+  }
+
+  if (configuration.encDataForOperator) {
+    tags.push({ name: 'Encrypted-Data-For-Operator', value: configuration.encDataForOperator });
+  }
+
+  if (configuration.userPubKey) {
+    tags.push({ name: 'User-Public-Key', value: configuration.userPubKey });
   }
 };
 
@@ -455,7 +470,8 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
 }
 
 export const validateDistributionFees = async (targetAddress: `0x${string}`, targetArweaveAddr: string, fee: number, timestamp: number, curatorEvmAddr?: `0x${string}`) => {
-  const logs = await getUsdcReceivedLogs(targetAddress, timestamp);
+  const blockRange = 2500;
+  const logs = await getUsdcReceivedLogs(targetAddress, timestamp, blockRange);
 
   const latestLog = logs.pop();
 
@@ -505,13 +521,13 @@ export const validateDistributionFees = async (targetAddress: `0x${string}`, tar
   // distributed fees
   // curator amount 
   if (curatorEvmAddr) {
-    const [ curatorLog ] = await getUsdcSentLogs(targetAddress, curatorEvmAddr, expectedFee * 0.2, requestTimestamp);
+    const [ curatorLog ] = await getUsdcSentLogs(targetAddress, curatorEvmAddr, expectedFee * 0.2, requestTimestamp, blockRange);
 
     if (!curatorLog) {
       return false; // validation false if there is no payment for curator
     }
   }
-  const [ marketplaceLog ] = await getUsdcSentLogs(targetAddress, MARKETPLACE_EVM_ADDRESS, expectedFee * 0.1, requestTimestamp);
+  const [ marketplaceLog ] = await getUsdcSentLogs(targetAddress, MARKETPLACE_EVM_ADDRESS, expectedFee * 0.1, requestTimestamp, blockRange);
 
   return !!marketplaceLog; // validation true if there are payments for curator and marketplace
 };
