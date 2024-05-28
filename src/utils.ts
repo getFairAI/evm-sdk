@@ -146,7 +146,7 @@ export const countStamps = async (txids: string[]) => {
   return stampsCount;
 };
 
-export const findAvailableOperators = async (script: findByIdQuery) => {
+export const findAvailableOperators = async (solution: findByIdQuery) => {
   const { data: operatorData } = await client.query(query, {
     tags: [
       {
@@ -162,8 +162,8 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
         values: ['Operator Registration'],
       },
       {
-        name: 'Script-Transaction',
-        values: [script.transactions.edges[0].node.id],
+        name: 'Solution-Transaction',
+        values: [solution.transactions.edges[0].node.id],
       },
     ],
     first: 100,
@@ -234,11 +234,11 @@ export const findAvailableOperators = async (script: findByIdQuery) => {
       
     // operator evm wallet
     const operatorEvmResult = await getLinkedEvmWallet(operator.node.owner.address);
-    const curatorEvmResult = await getLinkedEvmWallet(script.transactions.edges[0].node.owner.address);
+    const solutionRewardssAddress = solution.transactions.edges[0].node.tags.find(tag => tag.name === 'Rewards-EVM-Address')?.value as `0x${string}` | undefined;
 
     const timestamp = Number(operator.node.tags.find(tag => tag.name === 'Unix-Time')?.value);
     // validate operator paid registration fee && distributed fees for requests received
-    if (operatorEvmResult?.evmWallet && await validateRegistration(operatorEvmResult.evmWallet, operator.node.id, timestamp) && await validateDistributionFees(operatorEvmResult?.evmWallet, operator.node.owner.address, operatorFee, timestamp, curatorEvmResult?.evmWallet)) {
+    if (operatorEvmResult?.evmWallet && await validateRegistration(operatorEvmResult.evmWallet, operator.node.id, timestamp) && await validateDistributionFees(operatorEvmResult?.evmWallet, operator.node.owner.address, operatorFee, timestamp, solutionRewardssAddress)) {
       filtered.push({ tx: operator, evmWallet: operatorEvmResult?.evmWallet, evmPublicKey: operatorEvmResult?.publicKey, arweaveWallet: operator.node.owner.address, operatorFee });
     }
   }
@@ -288,7 +288,7 @@ export const getLinkedEvmWallet = async (arweaveWallet: string) => {
   }
 };
 
-export const startConversation = async (scriptTx: string, newCid: string) => {
+export const startConversation = async (solutionId: string, newCid: string) => {
   const tags = [
     {
       name: 'Protocol-Name',
@@ -303,8 +303,8 @@ export const startConversation = async (scriptTx: string, newCid: string) => {
       value: 'Conversation Start',
     },
     {
-      name: 'Script-Transaction',
-      value: scriptTx,
+      name: 'Solution-Transaction',
+      value: solutionId,
     },
     {
       name: 'Unix-Time',
@@ -332,6 +332,7 @@ interface Configuration {
   privateMode?: boolean;
   userPubKey?: string;
   encDataForOperator?: string;
+  modelName: string;
 }
 
 const addConfigTags = (tags: { name: string, value: string }[], configuration: Configuration, userAddr: string) => {
@@ -380,9 +381,13 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
   if (configuration.userPubKey) {
     tags.push({ name: 'User-Public-Key', value: configuration.userPubKey });
   }
+
+  if (configuration.modelName) {
+    tags.push({ name: 'Model-Name', value: configuration.modelName });
+  }
 };
 
-export const prompt = async (data: string | File, scriptTx: string, operator?: { evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration) => {
+export const prompt = async (data: string | File, solutionTx: string, operator?: { arweaveWallet: string, evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration) => {
   
   const wallet = await getConnectedAddress();
 
@@ -401,23 +406,23 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
         values: ['Conversation Start'],
       },
       {
-        name: 'Script-Transaction',
-        values: [scriptTx],
+        name: 'Solution-Transaction',
+        values: [solutionTx],
       },
     ]).from([ wallet ]).sort('DESC').limit(1);
     cid = lastConversation ? Number(lastConversation.tags.find((tag: { name: string; value: string }) => tag.name === 'Conversation-Identifier')?.value) : 1;
   }
   
-  const { data: scriptData } = await client.query(queryById, { ids: [ scriptTx ] });
+  const { data: solutionData } = await client.query(queryById, { ids: [ solutionTx ] });
 
-  if (!scriptData?.transactions.edges || scriptData.transactions.edges.length === 0) {
-    throw new Error('Script not found');
+  if (!solutionData?.transactions.edges || solutionData.transactions.edges.length === 0) {
+    throw new Error('Solution not found');
   }
 
   let result;
   if (!operator) {
 
-    [ result ] = await findAvailableOperators(scriptData); // get top of the list
+    [ result ] = await findAvailableOperators(solutionData); // get top of the list
 
     if (!result) {
       throw new Error('No operators available');
@@ -431,7 +436,8 @@ export const prompt = async (data: string | File, scriptTx: string, operator?: {
   const tags: { name: string; value: string }[] = [];
   tags.push({ name: 'Protocol-Name', value: 'FairAI' });
   tags.push({ name: 'Protocol-Version', value: '2.0' });
-  tags.push({ name: 'Script-Transaction', value: scriptTx });
+  tags.push({ name: 'Solution-Transaction', value: solutionTx });
+  tags.push({ name: 'Solution-Operator', value: result.arweaveWallet });
   tags.push({ name: 'Operation-Name', value: 'Inference Request' });
   tags.push({ name: 'Conversation-Identifier', value: `${cid}` });
 
@@ -507,7 +513,7 @@ export const validateDistributionFees = async (targetAddress: `0x${string}`, tar
       },
       { 
         name: 'Operation-Name',
-        values: [ 'Script Inference Response' ]
+        values: [ 'Inference Response' ]
       },
     ],
     owners: [ targetArweaveAddr ],
