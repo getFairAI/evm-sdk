@@ -333,6 +333,7 @@ interface Configuration {
   userPubKey?: string;
   encDataForOperator?: string;
   modelName: string;
+  promptHistory?: string;
 }
 
 const addConfigTags = (tags: { name: string, value: string }[], configuration: Configuration, userAddr: string) => {
@@ -384,6 +385,10 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
 
   if (configuration.modelName) {
     tags.push({ name: 'Model-Name', value: configuration.modelName });
+  }
+
+  if (configuration.promptHistory) {
+    tags.push({ name: 'Prompt-History', value: configuration.promptHistory });
   }
 };
 
