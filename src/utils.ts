@@ -334,6 +334,7 @@ interface Configuration {
   encDataForOperator?: string;
   modelName: string;
   promptHistory?: string;
+  contextFileUrl?: string;
 }
 
 const addConfigTags = (tags: { name: string, value: string }[], configuration: Configuration, userAddr: string) => {
@@ -389,6 +390,10 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
 
   if (configuration.promptHistory) {
     tags.push({ name: 'Prompt-History', value: configuration.promptHistory });
+  }
+
+  if (configuration.contextFileUrl) {
+    tags.push({ name: 'Context-File-Url', value: configuration.contextFileUrl });
   }
 };
 
