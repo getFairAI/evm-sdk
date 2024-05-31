@@ -4,7 +4,7 @@ import { postOnArweave } from "./irys.js";
 import { decodeTxMemo, getConnectedAddress, getUsdcReceivedLogs, getUsdcSentLogs, sendUSDC } from "./evm";
 import { graphql } from "./gql/gql";
 import { Client, fetchExchange } from '@urql/core';
-import { hexToBigInt } from "viem";
+import { hexToBigInt, isAddress } from "viem";
 import { MARKETPLACE_EVM_ADDRESS, REGISTRATION_USDC_FEE } from "./constants.js";
 import { findByIdQuery } from "./gql/graphql.js";
 
@@ -536,7 +536,7 @@ export const validateDistributionFees = async (targetAddress: `0x${string}`, tar
 
   // distributed fees
   // curator amount 
-  if (curatorEvmAddr) {
+  if (curatorEvmAddr && isAddress(curatorEvmAddr)) {
     const [ curatorLog ] = await getUsdcSentLogs(targetAddress, curatorEvmAddr, expectedFee * 0.2, requestTimestamp, blockRange);
 
     if (!curatorLog) {
