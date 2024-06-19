@@ -316,7 +316,9 @@ export const startConversation = async (solutionId: string, newCid: string) => {
     },
   ];
 
-  await postOnArweave('Conversation Start', tags);
+  const id = await postOnArweave('Conversation Start', tags);
+
+  return id;
 };
 
 interface Configuration {

@@ -207,7 +207,10 @@ type callbackFn = (logs: Log[]) => void;
 
 export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) => {
   if (!publicClient) {
-    throw new Error('Client Not Set. Please Call setProvider()');
+    publicClient = createPublicClient({
+      chain: CHAIN,
+      transport: http('https://arb1.arbitrum.io/rpc'),
+    });
   }
 
   return publicClient.watchContractEvent({
@@ -223,7 +226,10 @@ export const subscribe = (targetAddress: `0x${string}`, callback: callbackFn) =>
 
 export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestamp: number, limit?: number) => {
   if (!publicClient) {
-    throw new Error('Client Not Set. Please Call setProvider()');
+    publicClient = createPublicClient({
+      chain: CHAIN,
+      transport: http('https://arb1.arbitrum.io/rpc'),
+    });
   }
 
   const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
@@ -249,7 +255,10 @@ export const getUsdcReceivedLogs = async (targetAddress: `0x${string}`, timestam
 
 export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?: `0x${string}`, amount?: number, timestamp?: number, limit?: number) => {
   if (!publicClient) {
-    throw new Error('Client Not Set. Please Call setProvider()');
+    publicClient = createPublicClient({
+      chain: CHAIN,
+      transport: http('https://arb1.arbitrum.io/rpc'),
+    });
   }
 
   const result = await fetch(`https://coins.llama.fi/block/arbitrum/${timestamp}`);
