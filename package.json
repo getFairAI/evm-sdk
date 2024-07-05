@@ -1,6 +1,6 @@
 {
   "name": "@fairai/evm-sdk",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "",
   "type": "module",
   "main": "dist/esm.index.js",
@@ -27,9 +27,11 @@
     "@irys/query": "^0.0.6",
     "@irys/sdk": "^0.1.21",
     "@urql/core": "^5.0.0",
+    "arbundles": "^0.11.1",
     "browser-or-node": "^3.0.0-pre.0",
     "ethers": "^6.11.1",
-    "viem": "^2.9.13"
+    "viem": "^2.9.13",
+    "warp-contracts-plugin-signature": "^1.0.20"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.2",
@@ -37,6 +39,7 @@
     "@types/node": "^20.12.4",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
+    "arweave": "^1.15.1",
     "esbuild": "0.20.2",
     "esbuild-node-externals": "^1.13.0",
     "esbuild-plugin-polyfill-node": "^0.3.0",

@@ -28,6 +28,7 @@ try {
 
   await esbuild.build({
     ...sharedConfig,
+    sourcemap: true,
     format: 'esm',
     platform: 'node',
     outfile: 'dist/esm.node.index.js',
@@ -36,6 +37,7 @@ try {
   await esbuild.build({
     ...sharedConfig,
     format: 'esm',
+    sourcemap: true,
     platform: 'neutral',
     outfile: 'dist/esm.index.js',
     plugins: [ 

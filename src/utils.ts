@@ -399,7 +399,7 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
   }
 };
 
-export const prompt = async (data: string | File, solutionTx: string, operator?: { arweaveWallet: string, evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration) => {
+export const prompt = async (data: string | File, solutionTx: string, operator?: { arweaveWallet: string, evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration, useThrowaway = false) => {
   
   const wallet = await getConnectedAddress();
 
@@ -470,7 +470,7 @@ export const prompt = async (data: string | File, solutionTx: string, operator?:
     addConfigTags(tags, config, wallet);
   }
 
-  const requestId = await postOnArweave(data, tags);
+  const requestId = await postOnArweave(data, tags, useThrowaway);
 
   if (!requestId) {
     throw new Error('Could not upload to arweave');
