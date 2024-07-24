@@ -1,10 +1,9 @@
 import fs from 'fs/promises';
 import Irys, { WebIrys } from "@irys/sdk";
 import { isBrowser, isNode } from "browser-or-node";
-import { EIP1193Provider, createWalletClient, custom } from 'viem';
+import { EIP1193Provider, createWalletClient, custom, http } from 'viem';
 import { arbitrum } from 'viem/chains';
-import { ArweaveSigner } from 'arbundles';
-import { type JWKInterface } from 'arweave/web/lib/wallet';
+import { privateKeyToAccount } from 'viem/accounts';
 
 const network = 'mainnet';
 const token = 'arbitrum';
@@ -18,27 +17,42 @@ interface NodeProvider {
   privateKeyFile?: string
 }
 
-const setWebIrys = async (provider?: EIP1193Provider) => {
+const setWebIrys = async (provider?: EIP1193Provider | `0x${string}`) => {
   const availableProvider = provider ?? window?.ethereum;
-  if (!availableProvider) {
+  if (typeof provider === 'string') {
+    const account = privateKeyToAccount(provider);
+
+    const walletClient = createWalletClient({
+      account,
+      chain: arbitrum,
+      transport: http()
+    });
+    // Create a wallet object
+    const wallet = { name: "viemv2", rpcUrl, provider: walletClient };
+    // Use the wallet object
+    const webIrys = new WebIrys({ network, token, wallet });
+    await webIrys.ready();
+
+    return webIrys;
+  } else if (availableProvider && typeof availableProvider === 'object') {
+    const [ account ] = await availableProvider.request({ method: 'eth_requestAccounts' });
+
+    const walletClient = createWalletClient({
+      account,
+      chain: arbitrum,
+      transport: custom(availableProvider)
+    });
+    // Create a wallet object
+    const wallet = { name: "viemv2", rpcUrl, provider: walletClient };
+    // Use the wallet object
+    const webIrys = new WebIrys({ network, token, wallet });
+    await webIrys.ready();
+
+    return webIrys;
+  } else {
     throw new Error('Browser Provider not available.');
   }
-
-  const [ account ] = await availableProvider.request({ method: 'eth_requestAccounts' });
-
-  const walletClient = createWalletClient({
-    account,
-    chain: arbitrum,
-    transport: custom(availableProvider)
-  });
-	// Create a wallet object
-	const wallet = { name: "viemv2", rpcUrl, provider: walletClient };
-	// Use the wallet object
-	const webIrys = new WebIrys({ network, token, wallet });
-	await webIrys.ready();
- 
-	return webIrys;
-}
+};
 
 const setNodeIrys = async (privateKeyFile: string, rpcUrl?: string) => {
   const privateKey = await fs.readFile(privateKeyFile, 'utf-8');
@@ -55,26 +69,13 @@ const setNodeIrys = async (privateKeyFile: string, rpcUrl?: string) => {
   await irys.ready();
 
   return irys;
-}
+};
 
-export const setIrys = async (provider: NodeProvider | EIP1193Provider | JWKInterface) => {
-  if (provider && typeof provider === 'object' && 'kty' in provider) {
-    const arweaveSigner = new ArweaveSigner(provider as JWKInterface);
-    (arweaveSigner as ArweaveSigner & { getActivePublicKey: () => Promise<string>}).getActivePublicKey = async () => {
-      return provider.n;
-    };
-    // arweaveSigner.getActivePublicKey = arweaveSigner.signer
-
-    throwawayInstance = new WebIrys({
-      token: 'arweave',
-      wallet: {
-        provider: arweaveSigner,
-      },
-      network,
-    });
-    await throwawayInstance.ready();
-  } else if (isBrowser) {
+export const setIrys = async (provider: NodeProvider | EIP1193Provider | `0x${string}`) => {
+  if (isBrowser && typeof provider === 'object') {
     irysInstance = await setWebIrys(provider as EIP1193Provider);
+  } else if (isBrowser && typeof provider === 'string') {
+    throwawayInstance = await setWebIrys(provider);
   } else if (isNode && (provider as NodeProvider).privateKeyFile) {
     irysInstance = await setNodeIrys((provider as NodeProvider).privateKeyFile!, rpcUrl);
   } else if (isNode && !(provider as NodeProvider).privateKeyFile) {
@@ -82,7 +83,7 @@ export const setIrys = async (provider: NodeProvider | EIP1193Provider | JWKInte
   } else {
     throw new Error('Environment not recognized');
   }
-}
+};
 
 export const postOnArweave = async (data: string | File, tags: { name: string, value: string }[], useThrowaway = false) => {
   try {
@@ -116,7 +117,6 @@ export const postOnArweave = async (data: string | File, tags: { name: string, v
       return id;
     } 
   } catch (e) {
-    console.log(e);
     return undefined;
   }
-}
+};
