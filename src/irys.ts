@@ -1,16 +1,18 @@
 import fs from 'fs/promises';
 import Irys, { WebIrys } from "@irys/sdk";
 import { isBrowser, isNode } from "browser-or-node";
-import { EIP1193Provider, createWalletClient, custom, http } from 'viem';
+import { EIP1193Provider, createWalletClient, custom } from 'viem';
 import { arbitrum } from 'viem/chains';
-import { privateKeyToAccount } from 'viem/accounts';
+import EthereumConfig from "@irys/sdk/node/tokens/ethereum";
+import { BaseWebIrys } from "@irys/sdk/web/base";
+import { type WebToken } from "@irys/sdk/web/types";
 
 const network = 'mainnet';
 const token = 'arbitrum';
 const rpcUrl = 'https://arb1.arbitrum.io/rpc';
 
 let irysInstance: Irys | WebIrys;
-let throwawayInstance: WebIrys;
+let throwawayInstance: BaseWebIrys;
 
 interface NodeProvider {
   providerUrl?: string,
@@ -20,20 +22,24 @@ interface NodeProvider {
 const setWebIrys = async (provider?: EIP1193Provider | `0x${string}`) => {
   const availableProvider = provider ?? window?.ethereum;
   if (typeof provider === 'string') {
-    const account = privateKeyToAccount(provider);
-
-    const walletClient = createWalletClient({
-      account,
-      chain: arbitrum,
-      transport: http()
+    const irys = new BaseWebIrys({
+      network,
+      config: {
+        providerUrl: rpcUrl,
+      },
+      getTokenConfig: (i): WebToken =>
+        new EthereumConfig({
+          irys: i,
+          name: 'arbitrum',
+          ticker: 'ARB',
+          minConfirm: 1,
+          providerUrl: rpcUrl,
+          wallet: provider,
+        }) as unknown as WebToken,
     });
-    // Create a wallet object
-    const wallet = { name: "viemv2", rpcUrl, provider: walletClient };
-    // Use the wallet object
-    const webIrys = new WebIrys({ network, token, wallet });
-    await webIrys.ready();
+    await irys.ready();
 
-    return webIrys;
+    return irys;
   } else if (availableProvider && typeof availableProvider === 'object') {
     const [ account ] = await availableProvider.request({ method: 'eth_requestAccounts' });
 
@@ -73,9 +79,9 @@ const setNodeIrys = async (privateKeyFile: string, rpcUrl?: string) => {
 
 export const setIrys = async (provider: NodeProvider | EIP1193Provider | `0x${string}`) => {
   if (isBrowser && typeof provider === 'object') {
-    irysInstance = await setWebIrys(provider as EIP1193Provider);
+    irysInstance = await setWebIrys(provider as EIP1193Provider) as WebIrys;
   } else if (isBrowser && typeof provider === 'string') {
-    throwawayInstance = await setWebIrys(provider);
+    throwawayInstance = await setWebIrys(provider) as BaseWebIrys;
   } else if (isNode && (provider as NodeProvider).privateKeyFile) {
     irysInstance = await setNodeIrys((provider as NodeProvider).privateKeyFile!, rpcUrl);
   } else if (isNode && !(provider as NodeProvider).privateKeyFile) {

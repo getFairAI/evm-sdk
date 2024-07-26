@@ -3,13 +3,14 @@ import { isBrowser, isNode } from "browser-or-node";
 import fs from 'fs/promises';
 import { ChainEIP712, arbitrum } from 'viem/chains';
 import type { EIP1193Provider, Log } from 'viem';
-import { formatEther, formatUnits, hexToBigInt, hexToString, parseUnits, stringToHex } from 'viem/utils';
+import { formatEther, formatUnits, hexToBigInt, hexToString, parseEther, parseUnits, stringToHex } from 'viem/utils';
 import { getContract, PublicClient, WalletClient, createPublicClient, createWalletClient, custom, encodeFunctionData,  http, erc20Abi, webSocket} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 const CHAIN = arbitrum;
 
 let walletClient: WalletClient;
+let throwawayClient: WalletClient;
 let publicClient: PublicClient;
 
 interface NodeProvider {
@@ -70,6 +71,16 @@ export const setProvider = async (provider?: NodeProvider | EIP1193Provider) => 
   }
 }
 
+export const setThrowawayProvider = (privateKey: `0x${string}`) => {
+  const account = privateKeyToAccount(privateKey);
+  // if no provider passed, default to public arbitrum rpc
+  throwawayClient = createWalletClient({
+    chain: CHAIN,
+    account,
+    transport: http('https://arb1.arbitrum.io/rpc'),
+  });
+}
+
 export const getCurrentChainId = async () => {
   if (!walletClient || !publicClient) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
@@ -93,12 +104,16 @@ export const switchChain = (chain: ChainEIP712) => {
   return;
 };
 
-export const getConnectedAddress = () => {
-  if (!walletClient || !walletClient.account) {
+export const getConnectedAddress = (useThrowaway = false) => {
+  if (useThrowaway && (!throwawayClient || !throwawayClient.account)) {
+    throw new Error('Throwaway Client Not Initialized. Please Call setThrowawayProvider()');
+  } else if (!useThrowaway && (!walletClient || !walletClient.account)) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
+  } else if (useThrowaway) {
+    return throwawayClient.account?.address!;
+  } else {
+    return walletClient.account?.address!;
   }
-
-  return walletClient.account.address;
 }
 
 export const decodeTxMemo = async (tx: `0x${string}`) => {
@@ -135,16 +150,54 @@ export const getUsdcBalance = async () => {
   return 0;
 }
 
-export const getEthBalance = async () => {
+export const getUsdcAllowance = async (owner: `0x${string}`, spender: `0x${string}`) => {
+  if (!publicClient) {
+    publicClient = createPublicClient({
+      chain: CHAIN,
+      transport: http('https://arb1.arbitrum.io/rpc'),
+    });
+  }
+
+  const contract = getContract({
+    address: NATIVE_USDC_ARB,
+    abi: erc20Abi,
+    client: { public: publicClient }
+  });
+
+  const allowance = await contract.read.allowance([ owner, spender ]);
+  const decimals = await contract.read.decimals();
+  if (typeof allowance === 'bigint' && typeof decimals === 'number') {
+    return Number(formatUnits(allowance, decimals));
+  }
+
+  return 0;
+}
+
+export const getEthBalance = async (walletAddr?: `0x${string}`) => {
   if (!walletClient || !publicClient) {
     throw new Error('Client Not Initialized. Please Call setProvider()');
   }
 
-  const userAddr = (await walletClient.getAddresses())[0];
+  const userAddr = walletAddr ?? (await walletClient.getAddresses())[0];
   const balance = await publicClient.getBalance({ address: userAddr });
   
   return Number(formatEther(balance));
 }
+
+export const sendEth = async (target: `0x${string}`, amount: number) => {
+  if (!walletClient || !walletClient.account) {
+    throw new Error('Client Not Initialized. Please Call setProvider()');
+  }
+
+  const result = walletClient.sendTransaction({
+    chain: CHAIN,
+    account: walletClient.account,
+    to: target,
+    value: parseEther(amount.toString())
+  });
+
+  return result;
+};
 
 export const sendUSDC = async (target: `0x${string}`, amount: number, arweaveTx: string) => {
   if (!walletClient || !publicClient) {
@@ -201,6 +254,59 @@ export const sendUSDC = async (target: `0x${string}`, amount: number, arweaveTx:
 
     return hash;
   }
+}
+
+export const sendThrowawayUSDC = async (sender: `0x${string}`, target: `0x${string}`, amount: number, arweaveTx: string) => {
+  if (!throwawayClient) {
+    throw new Error('Throwaway Client Not Set. Please Call setThrowawayProvider()');
+  }
+
+  // Convert the amount to send to decimals (6 decimals for USDC)
+  const contract = getContract({
+    address: NATIVE_USDC_ARB,
+    abi: erc20Abi,
+    client: {
+      wallet: throwawayClient,
+      public: publicClient
+    }
+  });
+
+  // const balance = await contract.read.balanceOf([ userAddr ]);
+  const decimals = (await contract.read.decimals()) as number;
+  const amountParsed = parseUnits(amount.toString(), decimals);
+
+  const data = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'transferFrom',
+    args: [ sender, target, amountParsed ]
+  });
+
+  const memo = stringToHex(arweaveTx).slice(2); // 0x prefix is removed
+
+  let {
+    maxFeePerGas,
+    maxPriorityFeePerGas
+  } = await publicClient.estimateFeesPerGas();
+  
+  if (!maxPriorityFeePerGas) {
+    // use a third of the max fee as the priority fee
+    maxPriorityFeePerGas = maxFeePerGas;
+  }
+
+  const request = await throwawayClient.prepareTransactionRequest({
+    account: throwawayClient.account!,
+    to: NATIVE_USDC_ARB,
+    chain: CHAIN,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+    data: `${data}${memo}`, // encoded data for the transaction (transfer call plus arweave memo)
+  });
+  
+
+  const serializedTransaction = await throwawayClient.signTransaction(request);
+  const hash = await throwawayClient.sendRawTransaction({ serializedTransaction });
+
+  return hash;
 }
 
 type callbackFn = (logs: Log[]) => void;
@@ -287,3 +393,47 @@ export const getUsdcSentLogs = async (senderAddr: `0x${string}`, targetAddress?:
     return logs;
   }
 };
+
+export const allowUsdc = async (spender: `0x${string}`, amount: number) => {
+  if (!walletClient || !publicClient) {
+    throw new Error('Client Not Set. Please Call setProvider()');
+  }
+
+  // Convert the amount to send to decimals (6 decimals for USDC)
+  const amountInUsdc = parseUnits(amount.toString(), 6);
+
+  const data = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [ spender, amountInUsdc ],
+  });
+
+  let {
+    maxFeePerGas,
+    maxPriorityFeePerGas
+  } = await publicClient.estimateFeesPerGas();
+  
+  if (!maxPriorityFeePerGas) {
+    // use a third of the max fee as the priority fee
+    maxPriorityFeePerGas = maxFeePerGas;
+  }
+
+  const request = await walletClient.prepareTransactionRequest({
+    account: walletClient.account!,
+    to: NATIVE_USDC_ARB,
+    chain: CHAIN,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+    data,
+  });
+
+  if (isBrowser) {
+    const receipt = await walletClient.sendTransaction(request);
+    return receipt;
+  } else {
+    const serializedTransaction = await walletClient.signTransaction(request);
+    const hash = await walletClient.sendRawTransaction({ serializedTransaction });
+
+    return hash;
+  }
+}

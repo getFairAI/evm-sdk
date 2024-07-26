@@ -1,7 +1,7 @@
 import { Query } from "@irys/query";
 import { isNode } from "browser-or-node";
 import { postOnArweave } from "./irys.js";
-import { decodeTxMemo, getConnectedAddress, getUsdcReceivedLogs, getUsdcSentLogs, sendUSDC } from "./evm";
+import { decodeTxMemo, getConnectedAddress, getUsdcReceivedLogs, getUsdcSentLogs, sendThrowawayUSDC, sendUSDC } from "./evm";
 import { graphql } from "./gql/gql";
 import { Client, fetchExchange } from '@urql/core';
 import { hexToBigInt, isAddress } from "viem";
@@ -400,8 +400,8 @@ const addConfigTags = (tags: { name: string, value: string }[], configuration: C
 };
 
 export const prompt = async (data: string | File, solutionTx: string, operator?: { arweaveWallet: string, evmWallet: `0x${string}`, operatorFee: number }, cid?: number, config?: Configuration, useThrowaway = false) => {
-  
-  const wallet = await getConnectedAddress();
+  const mainWallet = await getConnectedAddress();
+  const wallet = await getConnectedAddress(useThrowaway);
 
   if (!cid) {
     const [ lastConversation ] = await queryClient.search('irys:transactions').tags([
@@ -467,7 +467,7 @@ export const prompt = async (data: string | File, solutionTx: string, operator?:
   tags.push({ name: 'Commercial-Use', value: 'Allowed' });
 
   if (config) {
-    addConfigTags(tags, config, wallet);
+    addConfigTags(tags, config, mainWallet);
   }
 
   const requestId = await postOnArweave(data, tags, useThrowaway);
@@ -482,10 +482,24 @@ export const prompt = async (data: string | File, solutionTx: string, operator?:
     finalFee *= config.nImages;
   }
 
-  const evmId = await sendUSDC(operatorEvmWallet, finalFee, requestId);
+  const evmId = useThrowaway ? await sendThrowawayUSDC(mainWallet, operatorEvmWallet, finalFee, requestId) : await sendUSDC(operatorEvmWallet, finalFee, requestId);
 
   return { arweaveTxId: requestId, evmTxId: evmId };
 }
+
+export const payPrompt = async (requestId: string, operatorEvmWallet: `0x${string}`, operatorFee: number, config?: Configuration,  useThrowaway = false) => {
+  const mainWallet = await getConnectedAddress();
+  
+  let finalFee = operatorFee;
+
+  if (config?.nImages && (config.nImages > 1 || config.nImages < 10)) {
+    finalFee *= config.nImages;
+  }
+
+  const evmId = useThrowaway ? await sendThrowawayUSDC(mainWallet, operatorEvmWallet, finalFee, requestId) : await sendUSDC(operatorEvmWallet, finalFee, requestId);
+
+  return { arweaveTxId: requestId, evmTxId: evmId };
+};
 
 export const validateDistributionFees = async (targetAddress: `0x${string}`, targetArweaveAddr: string, fee: number, timestamp: number, curatorEvmAddr?: `0x${string}`) => {
   const blockRange = 2500;
